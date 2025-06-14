@@ -5,3 +5,7 @@ langchain-huggingface
 langchain-google-genai
 transformers 
 sentence-transformers
+pypdf
+tiktoken
+fastapi[standard]
+uvicorn
