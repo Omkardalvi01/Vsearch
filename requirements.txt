@@ -1,0 +1,7 @@
+numpy
+langchain
+langchain-community
+langchain-huggingface
+langchain-google-genai
+transformers 
+sentence-transformers
