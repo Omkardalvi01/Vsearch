@@ -1,3 +1,4 @@
 save.pkl
 vectordb/
 *.pdf
+.env
