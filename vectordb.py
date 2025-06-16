@@ -43,7 +43,7 @@ def upload_file(file : UploadFile = File(...)):
     with open("save.pkl","wb") as f:
         pickle.dump(saved_data, f)
 
-    return {"result"  : "success"}
+    return {"result"  : "successful"}
 
 
 @app.get('/retrieve')
