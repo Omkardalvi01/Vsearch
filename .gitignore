@@ -2,3 +2,4 @@ save.pkl
 vectordb/
 *.pdf
 .env
+test.ipynb

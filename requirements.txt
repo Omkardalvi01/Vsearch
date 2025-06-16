@@ -9,3 +9,4 @@ pypdf
 tiktoken
 fastapi[standard]
 uvicorn
+faiss-cpu

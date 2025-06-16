@@ -6,16 +6,19 @@ import pickle
 from fastapi import FastAPI, UploadFile, File, Query
 import uvicorn
 import tempfile
+import faiss
 
 app = FastAPI()
 
 model_name = "sentence-transformers/all-MiniLM-L6-v2"
 
+
 # Initialize the embeddings
 embedding_model = HuggingFaceEmbeddings(model_name=model_name)
 
 def similarity_cosine(a, b):
-    return np.dot(a , b) / np.linalg.norm(a) * np.linalg.norm(b)
+    return np.dot(a , b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
 
 @app.post('/upload')
 def upload_file(file : UploadFile = File(...)):
@@ -29,28 +32,43 @@ def upload_file(file : UploadFile = File(...)):
     splits = splitter.split_documents(docs) 
     texts = [split.page_content for split in splits]
     embed_docs = embedding_model.embed_documents(texts)
-    data = [{'text' : text , 'embedding' : embeds} for text, embeds in zip(texts,embed_docs)]
-    print(len(data[0]['embedding']))
+
+    new_data = [{'text' : text , 'embedding' : embeds} for text, embeds in zip(texts,embed_docs)]
+
     with open("save.pkl", 'rb') as f:
         saved_data = pickle.load(f)
-    for dic in data:
-        saved_data.append(dic)
+
+    saved_data.extend(new_data)
+
     with open("save.pkl","wb") as f:
         pickle.dump(saved_data, f)
+
     return {"result"  : "success"}
+
 
 @app.get('/retrieve')
 def retrieve(query : str = Query(..., description="search query")):
+    
     vector = embedding_model.embed_query(query)
-    results = []
     with open("save.pkl", 'rb') as f:
         data = pickle.load(f)
-    for entry in data:
-        results.append(similarity_cosine(entry['embedding'], vector))
-    results = np.array(results)
-    ind = np.argpartition(results, -5)[:-5]
+    embeds = [entry['embedding'] for entry in data]
+    # for entry in data:
+    #     embeds.append(entry['embedding'])
+    embeds = np.array(embeds)
+
+    n_list = 10
+    d = len(embeds[0])
+    quantizer = faiss.IndexFlatL2(d)
+    index = faiss.IndexIVFFlat(quantizer, d, n_list)
+    index.train(embeds)
+    index.add(embeds)
+
+    xq = np.array([vector], dtype='float32')
+    D, I = index.search(xq, 4)  # search
+    idx = I.flatten()
     result = []
-    for i in ind:
+    for i in idx:
         result.append(data[i]['text'])
     return {"result" : result}
 
